@@ -1,12 +1,37 @@
 import React from "react";
-import { GoogleLogin, useGoogleLogin } from "@react-oauth/google";
+import {
+  GoogleLogin,
+  GoogleOAuthProvider,
+  useGoogleLogin,
+} from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import { FcGoogle } from "react-icons/fc";
 import shareVideo from "../assets/share.mp4";
 import logo from "../assets/logowhite.png";
 import jwt_decode from "jwt-decode";
 
+import { client } from "../client";
+
 const Login = () => {
+  const navigate = useNavigate();
+
+  const saveUser = (response) => {
+    const profile = jwt_decode(response.credential);
+    localStorage.setItem("user", JSON.stringify(profile));
+    const { name, jti, picture } = jwt_decode(response.credential);
+
+    const doc = {
+      _id: jti,
+      _type: "user",
+      userName: name,
+      image: picture,
+    };
+
+    client.createIfNotExists(doc).then(() => {
+      navigate("/", { replace: true });
+    });
+  };
+
   return (
     <div className="flex justify-start items-center flex-col h-screen">
       <div className="relative  w-full h-full">
@@ -26,9 +51,9 @@ const Login = () => {
         </div>
         <div className="shadow-2xl">
           <GoogleLogin
-            onSuccess={(codeResponse) =>
-              console.log(jwt_decode(codeResponse.credential))
-            }
+            onSuccess={(codeResponse) => {
+              saveUser(codeResponse);
+            }}
             onError={(err) => console.log(err)}
           />
         </div>
